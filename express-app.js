@@ -15,40 +15,49 @@ const courses = [
   { id: 3, name: 'JavaScript' }
 ];
 
-app.get('/', (req, res) => {
-  res.send('Hello, World!');
-});
-
-app.get('/api/posts/:year/:month', (req, res) => {
-  const { year, month } = req.params;
-  res.send({
-    year,
-    month
+function validateCourse(course) {
+  return Joi.validate(course, {
+    name: Joi.string()
+      .min(3)
+      .required()
   });
-});
+}
+
+function findCourse(id) {
+  id = ~~id;
+  return new Promise((res, rej) => {
+    courses.forEach((c, i) => {
+      if (c.id === id) {
+        res({
+          index: i,
+          course: c
+        });
+      }
+    });
+    rej(`Course with id ${id} not found`);
+  });
+}
 
 app.get('/api/courses', (req, res) => {
   res.send(courses);
 });
 
 app.get('/api/courses/:id', (req, res) => {
-  const id = ~~req.params.id;
-  const course = courses.find(c => c.id === id);
-  course
-    ? res.status(200).send(course)
-    : res.status(404).send(`Course with id ${id} not found`);
+  findCourse(req.params.id)
+    .then(({ course }) => {
+      res.status(200).send(course);
+    })
+    .catch(e => {
+      res.status(404).send(e);
+    });
 });
 
 app.post('/api/courses', (req, res) => {
-  const validation = Joi.validate(req.body, {
-    name: Joi.string()
-      .min(3)
-      .required()
-  })
-    .then(value => {
+  validateCourse(req.body)
+    .then(({ name }) => {
       const course = {
         id: courses.length + 1,
-        name: req.body.name
+        name: name
       };
       courses.push(course);
       res.status(200).send(course);
@@ -56,5 +65,34 @@ app.post('/api/courses', (req, res) => {
     .catch(e => {
       const { message } = e.details[0];
       res.status(400).send(message);
+    });
+});
+
+app.put('/api/courses/:id', (req, res) => {
+  validateCourse(req.body)
+    .then(({ name: update }) => {
+      findCourse(req.params.id)
+        .then(({ course }) => {
+          course.name = update;
+          res.status(200).send(course);
+        })
+        .catch(e => {
+          res.status(404).send(e);
+        });
+    })
+    .catch(e => {
+      const { message } = e.details[0];
+      res.status(400).send(message);
+    });
+});
+
+app.delete('/api/courses/:id', (req, res) => {
+  findCourse(req.params.id)
+    .then(({ index }) => {
+      const course = courses.splice(index, 1);
+      res.status(200).send(course);
+    })
+    .catch(e => {
+      res.status(404).send(e);
     });
 });
