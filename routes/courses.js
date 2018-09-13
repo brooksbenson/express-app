@@ -1,13 +1,7 @@
 const express = require('express');
 const Joi = require('joi');
-const app = express();
 
-app.use(express.json());
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`listening on port:${PORT}`);
-});
+const router = express.Router();
 
 const courses = [
   { id: 1, name: 'React' },
@@ -38,11 +32,11 @@ function findCourse(id) {
   });
 }
 
-app.get('/api/courses', (req, res) => {
+router.get('/', (req, res) => {
   res.send(courses);
 });
 
-app.get('/api/courses/:id', (req, res) => {
+router.get('/:id', (req, res) => {
   findCourse(req.params.id)
     .then(({ course }) => {
       res.status(200).send(course);
@@ -52,7 +46,7 @@ app.get('/api/courses/:id', (req, res) => {
     });
 });
 
-app.post('/api/courses', (req, res) => {
+router.post('/', (req, res) => {
   validateCourse(req.body)
     .then(({ name }) => {
       const course = {
@@ -68,7 +62,7 @@ app.post('/api/courses', (req, res) => {
     });
 });
 
-app.put('/api/courses/:id', (req, res) => {
+router.put('/:id', (req, res) => {
   validateCourse(req.body)
     .then(({ name: update }) => {
       findCourse(req.params.id)
@@ -86,7 +80,7 @@ app.put('/api/courses/:id', (req, res) => {
     });
 });
 
-app.delete('/api/courses/:id', (req, res) => {
+router.delete('/:id', (req, res) => {
   findCourse(req.params.id)
     .then(({ index }) => {
       const course = courses.splice(index, 1);
@@ -96,3 +90,5 @@ app.delete('/api/courses/:id', (req, res) => {
       res.status(404).send(e);
     });
 });
+
+module.exports = router;
